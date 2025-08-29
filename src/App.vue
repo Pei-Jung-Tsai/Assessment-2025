@@ -1,11 +1,17 @@
-<script setup></script>
+<script setup>
+import TopNav from './components/TopNav.vue'
+</script>
 
 <template>
-  <h1>You did it!</h1>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <header>
+    <TopNav />
+  </header>
+  <section class="TopPic position-relative">
+    <img src="@/assets/TopPic.avif" alt="Healthy food" class="img-fluid w-100" />
+  </section>
+  <main class="container mt-5">
+    <h1>Welcome to my website!</h1>
+  </main>
 </template>
 
 <style scoped></style>
