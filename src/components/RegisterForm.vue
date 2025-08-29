@@ -68,6 +68,35 @@ function clearForm() {
               />
             </div>
           </div>
+          <!-- Row 3 -->
+          <div class="row g-3 mb-3">
+            <div class="col-12 col-sm-6">
+              <label class="form-label" for="password">Password</label>
+              <input
+                id="password"
+                type="password"
+                class="form-control"
+                v-model="RegisterForm.password"
+                required
+              />
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label" for="confirm">Confirm password</label>
+              <input
+                id="confirm"
+                type="password"
+                class="form-control"
+                v-model="RegisterForm.confirmpassword"
+                required
+              />
+            </div>
+          </div>
+          <div class="text-center">
+            <button class="btn btn-primary me-2" type="submit">Submit</button>
+            <button class="btn btn-outline-secondary" type="button" @click="clearForm">
+              Clear
+            </button>
+          </div>
         </form>
       </div>
     </div>
