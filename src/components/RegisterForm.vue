@@ -16,6 +16,9 @@ const errors = ref({
 
 function submitForm() {
   alert('Submitted ()')
+  validateEmail(true)
+  validatePassword(true)
+  validateConfirm(true)
 }
 function clearForm() {
   RegisterForm.value = {
@@ -110,9 +113,12 @@ const validateConfirm = (blur) => {
                 type="email"
                 class="form-control"
                 v-model="RegisterForm.email"
+                @blur="validateEmail(true)"
+                @input="validateEmail(false)"
                 required
               />
             </div>
+            <div v-if="errors.email" class="text-danger small">{{ errors.email }}</div>
           </div>
           <!-- Row 3 -->
           <div class="row g-3 mb-3">
@@ -123,9 +129,12 @@ const validateConfirm = (blur) => {
                 type="password"
                 class="form-control"
                 v-model="RegisterForm.password"
+                @blur="validatePassword(true)"
+                @input="validatePassword(false)"
                 required
               />
             </div>
+            <div v-if="errors.password" class="text-danger small">{{ errors.password }}</div>
             <div class="col-12 col-sm-6">
               <label class="form-label" for="confirm">Confirm password</label>
               <input
@@ -133,9 +142,12 @@ const validateConfirm = (blur) => {
                 type="password"
                 class="form-control"
                 v-model="RegisterForm.confirmpassword"
+                @blur="validateConfirm(true)"
+                @input="validateConfirm(false)"
                 required
               />
             </div>
+            <div v-if="errors.confirm" class="text-danger small">{{ errors.confirm }}</div>
           </div>
           <div class="text-center">
             <button class="btn btn-primary me-2" type="submit">Submit</button>
