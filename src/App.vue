@@ -15,6 +15,7 @@ import RecipesList from './components/RecipesList.vue'
   <main class="container mt-5">
     <RegisterForm />
     <RecipesList />
+    <EmployeesList />
   </main>
 </template>
 
