@@ -77,24 +77,31 @@ const validateEmail = (blur) => {
   }
 }
 
+const passwordHints = ref({
+  length: false,
+  uppercase: false,
+  lowercase: false,
+  number: false,
+  special: false,
+})
 const validatePassword = (blur) => {
   const password = RegisterForm.value.password
   const minLength = 8
-  const hasUppercase = /[A-Z]/.test(password)
-  const hasLowercase = /[a-z]/.test(password)
-  const hasNumber = /\d/.test(password)
-  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password)
 
-  if (password.length < minLength) {
-    if (blur) errors.value.password = `Password must be at least ${minLength} characters long.`
-  } else if (!hasUppercase) {
-    if (blur) errors.value.password = 'Password must contain at least one uppercase letter.'
-  } else if (!hasLowercase) {
-    if (blur) errors.value.password = 'Password must contain at least one lowercase letter.'
-  } else if (!hasNumber) {
-    if (blur) errors.value.password = 'Password must contain at least one number.'
-  } else if (!hasSpecialChar) {
-    if (blur) errors.value.password = 'Password must contain at least one special character.'
+  passwordHints.value.length = password.length >= minLength
+  passwordHints.value.uppercase = /[A-Z]/.test(password)
+  passwordHints.value.lowercase = /[a-z]/.test(password)
+  passwordHints.value.number = /\d/.test(password)
+  passwordHints.value.special = /[!@#$%^&*(),.?":{}|<>]/.test(password)
+
+  if (
+    !passwordHints.value.length ||
+    !passwordHints.value.uppercase ||
+    !passwordHints.value.lowercase ||
+    !passwordHints.value.number ||
+    !passwordHints.value.special
+  ) {
+    if (blur) errors.value.password = 'Password does not meet all requirements.'
   } else {
     errors.value.password = null
   }
@@ -235,7 +242,7 @@ const validatePhone = (blur) => {
             </div>
           </div>
 
-          <!-- Row 4 -->
+          <!-- Row 4-->
           <div class="row g-3 mb-3">
             <div class="col-12 col-sm-6">
               <label class="form-label" for="password">Password</label>
@@ -247,8 +254,24 @@ const validatePhone = (blur) => {
                 @blur="validatePassword(true)"
                 @input="validatePassword(false)"
               />
-              <div v-if="errors.password" class="text-danger small">
-                {{ errors.password }}
+              <div v-if="RegisterForm.password" class="small mt-1">
+                <ul class="list-unstyled">
+                  <li :class="passwordHints.length ? 'text-success' : 'text-danger'">
+                    At least 8 characters
+                  </li>
+                  <li :class="passwordHints.uppercase ? 'text-success' : 'text-danger'">
+                    At least 1 uppercase letter
+                  </li>
+                  <li :class="passwordHints.lowercase ? 'text-success' : 'text-danger'">
+                    At least 1 lowercase letter
+                  </li>
+                  <li :class="passwordHints.number ? 'text-success' : 'text-danger'">
+                    At least 1 number
+                  </li>
+                  <li :class="passwordHints.special ? 'text-success' : 'text-danger'">
+                    At least 1 special character
+                  </li>
+                </ul>
               </div>
             </div>
 
