@@ -40,12 +40,11 @@ function submitForm() {
     !errors.value.email &&
     !errors.value.password &&
     !errors.value.confirmPassword
-  )
-    return
-
-  registeredUsers.value.push({ ...RegisterForm.value })
-  clearForm()
-  alert('Submitted ()')
+  ) {
+    registeredUsers.value.push({ ...RegisterForm.value })
+    clearForm()
+    alert('Submitted :)')
+  }
 }
 
 function clearForm() {
@@ -57,6 +56,15 @@ function clearForm() {
     password: '',
     confirmPassword: '',
     phone: '',
+  }
+  errors.value = {
+    fullname: null,
+    dob: null,
+    gender: null,
+    email: null,
+    password: null,
+    confirmPassword: null,
+    phone: null,
   }
 }
 
@@ -113,7 +121,8 @@ const validateDob = (blur) => {
   const dob = RegisterForm.value.dob
   if (!dob) {
     if (blur) errors.value.dob = 'Please select your date of birth.'
-    return
+  } else {
+    errors.value.dob = null
   }
 }
 
@@ -152,9 +161,9 @@ const validatePhone = (blur) => {
                 id="fullname"
                 class="form-control"
                 v-model="RegisterForm.fullname"
+                placeholder="e.g. Pei-Jung Tsai"
                 @blur="validateFullname(true)"
                 @input="validateFullname(false)"
-                required
               />
               <div v-if="errors.fullname" class="text-danger small">
                 {{ errors.fullname }}
@@ -170,7 +179,6 @@ const validatePhone = (blur) => {
                 v-model="RegisterForm.dob"
                 @blur="validateDob(true)"
                 @change="validateDob(false)"
-                required
               />
               <div v-if="errors.dob" class="text-danger small">{{ errors.dob }}</div>
             </div>
@@ -186,7 +194,6 @@ const validatePhone = (blur) => {
                 v-model="RegisterForm.gender"
                 @blur="validateGender(true)"
                 @change="validateGender(false)"
-                required
               >
                 <option value="" disabled>Select</option>
                 <option value="female">Female</option>
@@ -205,8 +212,7 @@ const validatePhone = (blur) => {
                 v-model="RegisterForm.phone"
                 @blur="validatePhone(true)"
                 @input="validatePhone(false)"
-                placeholder="e.g. 0987654321"
-                required
+                placeholder="e.g. 0487654321"
               />
               <div v-if="errors.phone" class="text-danger small">{{ errors.phone }}</div>
             </div>
@@ -221,9 +227,9 @@ const validatePhone = (blur) => {
                 type="email"
                 class="form-control"
                 v-model="RegisterForm.email"
+                placeholder="e.g.xxx@gmail.com"
                 @blur="validateEmail(true)"
                 @input="validateEmail(false)"
-                required
               />
               <div v-if="errors.email" class="text-danger small">{{ errors.email }}</div>
             </div>
@@ -240,7 +246,6 @@ const validatePhone = (blur) => {
                 v-model="RegisterForm.password"
                 @blur="validatePassword(true)"
                 @input="validatePassword(false)"
-                required
               />
               <div v-if="errors.password" class="text-danger small">
                 {{ errors.password }}
@@ -256,7 +261,6 @@ const validatePhone = (blur) => {
                 v-model="RegisterForm.confirmPassword"
                 @blur="validateConfirm(true)"
                 @input="validateConfirm(false)"
-                required
               />
               <div v-if="errors.confirmPassword" class="text-danger small">
                 {{ errors.confirmPassword }}
@@ -275,9 +279,23 @@ const validatePhone = (blur) => {
     </div>
   </div>
   <div v-if="registeredUsers.length" class="mt-4">
-    <h3>Registered Users (frontend only)</h3>
+    <h3>Registered Users</h3>
     <ul>
       <li v-for="(u, i) in registeredUsers" :key="i">{{ u.fullname }} - {{ u.email }}</li>
     </ul>
   </div>
 </template>
+
+<style scoped>
+.form-control::placeholder {
+  color: #ccc;
+  opacity: 1;
+}
+input[type='date']::-webkit-datetime-edit {
+  color: #ccc;
+  opacity: 1;
+}
+.placeholder {
+  color: #ccc;
+}
+</style>

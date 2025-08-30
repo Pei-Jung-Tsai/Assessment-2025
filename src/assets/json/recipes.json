@@ -1,0 +1,29 @@
+[
+  {
+    "id": 1,
+    "title": "Garlic Butter Salmon",
+    "category": "Seafood",
+    "time": 25,
+    "image": "https://picsum.photos/seed/salmon/600/400",
+    "ingredients": ["Salmon", "Garlic", "Butter", "Lemon", "Parsley"],
+    "steps": ["Melt butter with garlic", "Sear salmon", "Spoon butter", "Serve with lemon"]
+  },
+  {
+    "id": 2,
+    "title": "Veggie Fried Rice",
+    "category": "Vegetarian",
+    "time": 15,
+    "image": "https://picsum.photos/seed/rice/600/400",
+    "ingredients": ["Rice", "Carrot", "Peas", "Soy sauce", "Egg"],
+    "steps": ["Scramble egg", "Stir-fry veggies", "Add rice & sauce", "Combine with egg"]
+  },
+  {
+    "id": 3,
+    "title": "Chicken Caesar Salad",
+    "category": "Salad",
+    "time": 10,
+    "image": "https://picsum.photos/seed/salad/600/400",
+    "ingredients": ["Chicken", "Romaine", "Croutons", "Parmesan", "Caesar dressing"],
+    "steps": ["Grill chicken", "Toss lettuce", "Add dressing", "Top with chicken & cheese"]
+  }
+]
