@@ -1,25 +1,53 @@
 <script setup>
 import { ref } from 'vue'
+
 const RegisterForm = ref({
   fullname: '',
   dob: '',
   gender: '',
   email: '',
   password: '',
-  confirmpassword: '',
+  confirmPassword: '',
+  phone: '',
 })
+
 const errors = ref({
+  fullname: null,
+  dob: null,
+  gender: null,
   email: null,
   password: null,
   confirmPassword: null,
+  phone: null,
 })
 
+const registeredUsers = ref([])
+
 function submitForm() {
-  alert('Submitted ()')
+  validateFullname(true)
+  validateDob(true)
+  validateGender(true)
+  validatePhone(true)
   validateEmail(true)
   validatePassword(true)
   validateConfirm(true)
+
+  if (
+    !errors.value.fullname &&
+    !errors.value.dob &&
+    !errors.value.gender &&
+    !errors.value.phone &&
+    !errors.value.email &&
+    !errors.value.password &&
+    !errors.value.confirmPassword
+  )
+    return
+
+  registeredUsers.value.push({ ...RegisterForm.value })
+  clearForm()
+  alert('Submitted ()')
 }
+
 function clearForm() {
   RegisterForm.value = {
     fullname: '',
@@ -27,7 +55,8 @@ function clearForm() {
     gender: '',
     email: '',
     password: '',
-    confirmpassword: '',
+    confirmPassword: '',
+    phone: '',
   }
 }
 
@@ -64,13 +93,50 @@ const validatePassword = (blur) => {
 }
 
 const validateConfirm = (blur) => {
-  if (RegisterForm.value.confirmpassword === RegisterForm.value.password) {
+  if (RegisterForm.value.confirmPassword !== RegisterForm.value.password) {
     if (blur) errors.value.confirmPassword = 'Passwords do not match.'
   } else {
     errors.value.confirmPassword = null
   }
 }
+
+const validateFullname = (blur) => {
+  const namelength = RegisterForm.value.fullname.trim().length >= 3
+  if (!namelength) {
+    if (blur) errors.value.fullname = 'Full name must be at least 3 characters.'
+  } else {
+    errors.value.fullname = null
+  }
+}
+
+const validateDob = (blur) => {
+  const dob = RegisterForm.value.dob
+  if (!dob) {
+    if (blur) errors.value.dob = 'Please select your date of birth.'
+    return
+  }
+}
+
+const validateGender = (blur) => {
+  const gender = RegisterForm.value.gender
+  if (!gender) {
+    if (blur) errors.value.gender = 'Please select a gender.'
+  } else {
+    errors.value.gender = null
+  }
+}
+
+const validatePhone = (blur) => {
+  const phonePattern = /^\d{10}$/
+  const phone = phonePattern.test(RegisterForm.value.phone)
+  if (!phone) {
+    if (blur) errors.value.phone = 'Please enter a valid 10-digit phone number.'
+  } else {
+    errors.value.phone = null
+  }
+}
 </script>
+
 <template>
   <div class="container py-4">
     <div class="row justify-content-center">
@@ -82,8 +148,19 @@ const validateConfirm = (blur) => {
           <div class="row g-3 mb-3">
             <div class="col-12 col-sm-6">
               <label class="form-label" for="fullname">Full name</label>
-              <input id="fullname" class="form-control" v-model="RegisterForm.fullname" required />
+              <input
+                id="fullname"
+                class="form-control"
+                v-model="RegisterForm.fullname"
+                @blur="validateFullname(true)"
+                @input="validateFullname(false)"
+                required
+              />
+              <div v-if="errors.fullname" class="text-danger small">
+                {{ errors.fullname }}
+              </div>
             </div>
+
             <div class="col-12 col-sm-6">
               <label class="form-label" for="dob">Date of Birth</label>
               <input
@@ -91,21 +168,52 @@ const validateConfirm = (blur) => {
                 type="date"
                 class="form-control"
                 v-model="RegisterForm.dob"
+                @blur="validateDob(true)"
+                @change="validateDob(false)"
                 required
               />
+              <div v-if="errors.dob" class="text-danger small">{{ errors.dob }}</div>
             </div>
           </div>
+
           <!-- Row 2 -->
           <div class="row g-3 mb-3">
             <div class="col-12 col-sm-6">
               <label class="form-label" for="gender">Gender</label>
-              <select id="gender" class="form-select" v-model="RegisterForm.gender" required>
+              <select
+                id="gender"
+                class="form-select"
+                v-model="RegisterForm.gender"
+                @blur="validateGender(true)"
+                @change="validateGender(false)"
+                required
+              >
                 <option value="" disabled>Select</option>
                 <option value="female">Female</option>
                 <option value="male">Male</option>
                 <option value="other">Other</option>
               </select>
+              <div v-if="errors.gender" class="text-danger small">{{ errors.gender }}</div>
             </div>
+
+            <div class="col-12 col-sm-6">
+              <label class="form-label" for="phone">Phone</label>
+              <input
+                id="phone"
+                type="tel"
+                class="form-control"
+                v-model="RegisterForm.phone"
+                @blur="validatePhone(true)"
+                @input="validatePhone(false)"
+                placeholder="e.g. 0987654321"
+                required
+              />
+              <div v-if="errors.phone" class="text-danger small">{{ errors.phone }}</div>
+            </div>
+          </div>
+
+          <!-- Row 3 -->
+          <div class="row g-3 mb-3">
             <div class="col-12 col-sm-6">
               <label class="form-label" for="email">Email</label>
               <input
@@ -117,10 +225,11 @@ const validateConfirm = (blur) => {
                 @input="validateEmail(false)"
                 required
               />
+              <div v-if="errors.email" class="text-danger small">{{ errors.email }}</div>
             </div>
-            <div v-if="errors.email" class="text-danger small">{{ errors.email }}</div>
           </div>
-          <!-- Row 3 -->
+
+          <!-- Row 4 -->
           <div class="row g-3 mb-3">
             <div class="col-12 col-sm-6">
               <label class="form-label" for="password">Password</label>
@@ -133,22 +242,28 @@ const validateConfirm = (blur) => {
                 @input="validatePassword(false)"
                 required
               />
+              <div v-if="errors.password" class="text-danger small">
+                {{ errors.password }}
+              </div>
             </div>
-            <div v-if="errors.password" class="text-danger small">{{ errors.password }}</div>
+
             <div class="col-12 col-sm-6">
-              <label class="form-label" for="confirm">Confirm password</label>
+              <label class="form-label" for="confirmPassword">Confirm password</label>
               <input
-                id="confirm"
+                id="confirmPassword"
                 type="password"
                 class="form-control"
-                v-model="RegisterForm.confirmpassword"
+                v-model="RegisterForm.confirmPassword"
                 @blur="validateConfirm(true)"
                 @input="validateConfirm(false)"
                 required
               />
+              <div v-if="errors.confirmPassword" class="text-danger small">
+                {{ errors.confirmPassword }}
+              </div>
             </div>
-            <div v-if="errors.confirm" class="text-danger small">{{ errors.confirm }}</div>
           </div>
+
           <div class="text-center">
             <button class="btn btn-primary me-2" type="submit">Submit</button>
             <button class="btn btn-outline-secondary" type="button" @click="clearForm">
@@ -158,5 +273,11 @@ const validateConfirm = (blur) => {
         </form>
       </div>
     </div>
+  </div>
+  <div v-if="registeredUsers.length" class="mt-4">
+    <h3>Registered Users (frontend only)</h3>
+    <ul>
+      <li v-for="(u, i) in registeredUsers" :key="i">{{ u.fullname }} - {{ u.email }}</li>
+    </ul>
   </div>
 </template>
