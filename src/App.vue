@@ -7,16 +7,12 @@ import RecipesList from './components/RecipesList.vue'
 <template>
   <header>
     <TopNav />
+    <router-view />
   </header>
 
   <section class="TopPic position-relative">
     <img src="@/assets/TopPic.avif" alt="Healthy food" class="img-fluid w-100" />
   </section>
-  <main class="container mt-5">
-    <RegisterForm />
-    <RecipesList />
-    <EmployeesList />
-  </main>
 </template>
 
 <style scoped></style>

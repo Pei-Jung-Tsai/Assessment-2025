@@ -1,17 +1,21 @@
+<script setup></script>
+
 <template>
   <div class="container">
     <header class="d-flex align-items-center justify-content-between py-3">
       <!-- Press OrgLogo back to Home Page -->
-      <a href="/" class="logo-link fw-bold text-decoration-none text-dark">OrgLogo</a>
+      <router-link to="/home" class="logo-link fw-bold text-decoration-none text-dark">
+        OrgLogo
+      </router-link>
       <!-- Main NavigationBar to other pages -->
       <nav aria-label="Primary navigation">
         <ul class="nav nav-pills flex-wrap gap-2">
-          <li class="nav-item"><a class="nav-link" href="#">About Us</a></li>
-          <li class="nav-item"><a class="nav-link" href="#">Services &amp; Resources</a></li>
-          <li class="nav-item"><a class="nav-link" href="#">Get Involved</a></li>
-          <li class="nav-item"><a class="nav-link" href="#">News &amp; Updates</a></li>
-          <li class="nav-item"><a class="nav-link" href="#">Contact Us</a></li>
-          <li class="nav-item"><a class="nav-link" href="#">Log In</a></li>
+          <li class="nav-item">
+            <router-link to="/about" class="nav-link">About</router-link>
+          </li>
+          <li class="nav-item">
+            <router-link to="/login" class="nav-link">Log In</router-link>
+          </li>
         </ul>
       </nav>
     </header>
