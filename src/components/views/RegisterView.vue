@@ -2,9 +2,11 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'
+import { getFirestore, doc, setDoc, serverTimestamp } from 'firebase/firestore'
 
 const router = useRouter()
 const auth = getAuth()
+const db = getFirestore()
 
 const RegisterForm = ref({
   fullname: '',
@@ -130,6 +132,16 @@ async function submitForm() {
         RegisterForm.value.email,
         RegisterForm.value.password,
       )
+      await setDoc(doc(db, 'users', data.user.uid), {
+        email: RegisterForm.value.email,
+        fullName: RegisterForm.value.fullname,
+        dob: RegisterForm.value.dob,
+        gender: RegisterForm.value.gender,
+        phone: RegisterForm.value.phone,
+        role: 'user', // default role when registering,can be manually changed to "admin" in Firebase Console
+        createdAt: serverTimestamp(),
+      })
+
       console.log('Register Successful!', data)
       alert('Registration successful! Please log in.')
       router.push('/login')
