@@ -38,9 +38,11 @@
 </template>
 
 <script>
+import { clampText, isSafeHttpsUrl, toPositiveInt } from '@/utils/validate'
 import { ref } from 'vue'
 import db from '../../firebase/init.js'
-import { collection, addDoc } from 'firebase/firestore'
+import { authState } from '../../stores/auth'
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
 
 export default {
   setup() {
@@ -52,14 +54,28 @@ export default {
     const stepsInput = ref('')
 
     const addRecipe = async () => {
+      const uid = authState.uid
       try {
         await addDoc(collection(db, 'recipes'), {
-          title: title.value,
-          category: category.value,
-          time: Number(time.value),
-          image: image.value,
-          ingredients: ingredientsInput.value.split(',').map((i) => i.trim()),
-          steps: stepsInput.value.split(',').map((s) => s.trim()),
+          title: clampText(title.value, 80),
+          category: clampText(category.value, 40),
+          time: toPositiveInt(time.value, 1, 600),
+          image: isSafeHttpsUrl(image.value) ? image.value : '',
+          ingredients: clampText(ingredientsInput.value, 500)
+            .split(',')
+            .map((s) => clampText(s, 40))
+            .filter(Boolean),
+          steps: clampText(stepsInput.value, 1000)
+            .split(',')
+            .map((s) => clampText(s, 100))
+            .filter(Boolean),
+          // Aggregates for average rating
+          ratingCount: 0,
+          ratingSum: 0,
+          avgRating: 0,
+
+          createdAt: serverTimestamp(),
+          createdBy: uid,
         })
 
         // reset form
