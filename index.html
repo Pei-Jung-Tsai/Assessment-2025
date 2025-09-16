@@ -1,6 +1,13 @@
 <!doctype html>
 <html lang="">
-  <head>
+  <head
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self';
+           img-src 'self' https: data:;
+           script-src 'self' https://www.gstatic.com https://www.googleapis.com;
+           style-src 'self' 'unsafe-inline';
+           connect-src 'self' https://firestore.googleapis.com https://www.googleapis.com https://securetoken.googleapis.com;"
+  >
     <meta charset="UTF-8" />
     <link rel="icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
