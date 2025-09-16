@@ -2,11 +2,11 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'
-import { getFirestore, doc, setDoc, serverTimestamp } from 'firebase/firestore'
+import db from '../../firebase/init.js'
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
 
 const router = useRouter()
 const auth = getAuth()
-const db = getFirestore()
 
 const RegisterForm = ref({
   fullname: '',
@@ -105,6 +105,7 @@ function clearForm() {
     confirmPassword: null,
     phone: null,
   }
+  globalError.value = null
 }
 const globalError = ref(null)
 
@@ -127,27 +128,31 @@ async function submitForm() {
     !errors.value.confirmPassword
   ) {
     try {
-      const data = await createUserWithEmailAndPassword(
-        auth,
-        RegisterForm.value.email,
-        RegisterForm.value.password,
-      )
-      await setDoc(doc(db, 'users', data.user.uid), {
-        email: RegisterForm.value.email,
-        fullName: RegisterForm.value.fullname,
-        dob: RegisterForm.value.dob,
-        gender: RegisterForm.value.gender,
-        phone: RegisterForm.value.phone,
-        role: 'user', // default role when registering,can be manually changed to "admin" in Firebase Console
-        createdAt: serverTimestamp(),
-      })
+      const email = RegisterForm.value.email.trim().toLowerCase()
+      const cred = await createUserWithEmailAndPassword(auth, email, RegisterForm.value.password)
+      const uid = cred.user.uid
 
-      console.log('Register Successful!', data)
+      await setDoc(
+        doc(db, 'users', uid),
+        {
+          uid,
+          email,
+          fullName: RegisterForm.value.fullname.trim(),
+          dob: RegisterForm.value.dob || null,
+          gender: RegisterForm.value.gender || null,
+          phone: RegisterForm.value.phone || null,
+          role: 'user',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      )
+      console.log('Register Successful!', cred)
       alert('Registration successful! Please log in.')
       router.push('/login')
     } catch (error) {
       console.error(error.code)
-      globalError.value = 'Please fix all highlighted errors before submitting.'
+      globalError.value = 'This email is already registered'
     }
   }
 }

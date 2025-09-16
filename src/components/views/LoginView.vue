@@ -101,6 +101,15 @@ const clearForm = () => {
             <button type="submit" class="btn btn-primary me-2">Login</button>
             <button type="button" class="btn btn-secondary" @click="clearForm">Clear</button>
           </div>
+          <div class="text-center mt-3">
+            <router-link
+              to="/register"
+              class="text-decoration-none"
+              aria-label="Go to register page"
+            >
+              Don't have an account? <span class="fw-semibold">Sign up</span>
+            </router-link>
+          </div>
 
           <p v-if="errors.login" class="text-danger mt-2">
             {{ errors.login }}

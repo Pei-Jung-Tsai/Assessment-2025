@@ -1,4 +1,6 @@
-<script setup></script>
+<script setup>
+import { authState as auth, doSignOut } from '../stores/auth'
+</script>
 
 <template>
   <div class="container">
@@ -13,8 +15,16 @@
           <li class="nav-item">
             <router-link to="/about" class="nav-link">About</router-link>
           </li>
-          <li class="nav-item">
+          <li class="nav-item" v-if="auth.role === 'admin'">
+            <router-link to="/addrecipe" class="nav-link" active-class="active">
+              Add Recipe
+            </router-link>
+          </li>
+          <li class="nav-item" v-if="!auth.isAuthed">
             <router-link to="/login" class="nav-link">Log In</router-link>
+          </li>
+          <li class="nav-item" v-else>
+            <button class="btn btn-outline-secondary" @click="doSignOut">Logout</button>
           </li>
         </ul>
       </nav>

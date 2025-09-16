@@ -1,7 +1,5 @@
 <script setup>
 import TopNav from './components/TopNav.vue'
-import RegisterForm from './components/RegisterForm.vue'
-import RecipesList from './components/RecipesList.vue'
 </script>
 
 <template>
