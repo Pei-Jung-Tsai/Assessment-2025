@@ -45,14 +45,14 @@ export const sendWelcomeEmail = onRequest({ secrets: [SENDGRID_API_KEY] }, async
       const key = SENDGRID_API_KEY.value()
       if (!key || !key.startsWith('SG.')) {
         logger.error(
-          '❌ Invalid SENDGRID_API_KEY format:',
+          ' Invalid SENDGRID_API_KEY format:',
           key ? key.slice(0, 5) + '...' : 'undefined',
         )
         throw new Error('SENDGRID_API_KEY is invalid — should start with SG.')
       }
 
       sgMail.setApiKey(key)
-      logger.info('✅ SENDGRID_API_KEY loaded successfully.')
+      logger.info(' SENDGRID_API_KEY loaded successfully.')
 
       // send email (Dynamic Template + attachment)
       await sgMail.send({

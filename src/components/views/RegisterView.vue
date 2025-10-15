@@ -10,6 +10,7 @@ import axios from 'axios'
 const router = useRouter()
 const auth = getAuth()
 
+//  FORM STATE
 const RegisterForm = ref({
   fullname: '',
   dob: '',
@@ -38,6 +39,7 @@ const passwordHints = ref({
   special: false,
 })
 
+//  VALIDATION
 const validateFullname = (blur) => {
   const ok = RegisterForm.value.fullname.trim().length >= 3
   errors.value.fullname = !ok && blur ? 'Full name must be at least 3 characters.' : null
@@ -88,6 +90,7 @@ const validateConfirm = (blur) => {
   errors.value.confirmPassword = !ok && blur ? 'Passwords do not match.' : null
 }
 
+//  RESET
 function clearForm() {
   RegisterForm.value = {
     fullname: '',
@@ -98,20 +101,15 @@ function clearForm() {
     confirmPassword: '',
     phone: '',
   }
-  errors.value = {
-    fullname: null,
-    dob: null,
-    gender: null,
-    email: null,
-    password: null,
-    confirmPassword: null,
-    phone: null,
-  }
+  Object.keys(errors.value).forEach((k) => (errors.value[k] = null))
   globalError.value = null
 }
+
 const globalError = ref(null)
 
+//  SUBMIT FUNCTION
 async function submitForm() {
+  // Validate all fields
   validateFullname(true)
   validateDob(true)
   validateGender(true)
@@ -120,6 +118,7 @@ async function submitForm() {
   validatePassword(true)
   validateConfirm(true)
 
+  // Only proceed if all pass
   if (
     !errors.value.fullname &&
     !errors.value.dob &&
@@ -134,6 +133,7 @@ async function submitForm() {
       const cred = await createUserWithEmailAndPassword(auth, email, RegisterForm.value.password)
       const uid = cred.user.uid
 
+      // Save to Firestore
       await setDoc(
         doc(db, 'users', uid),
         {
@@ -149,12 +149,31 @@ async function submitForm() {
         },
         { merge: true },
       )
-      console.log('Register Successful!', cred)
-      alert('Registration successful! Please log in.')
+
+      //  Get token for Cloud Function
+      const idToken = await cred.user.getIdToken()
+
+      //  Call Cloud Function to send welcome email
+      await axios.post(
+        'https://sendwelcomeemail-dnedbvyhva-ts.a.run.app',
+        {
+          to: email,
+          displayName: RegisterForm.value.fullname.trim(),
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      )
+
+      console.log(' Email sent via Cloud Function')
+      alert('Registration successful! Welcome email sent!')
       router.push('/login')
     } catch (error) {
-      console.error(error.code)
-      globalError.value = 'This email is already registered'
+      console.error(' Error during registration:', error)
+      globalError.value = 'This email is already registered or sending failed.'
     }
   }
 }
