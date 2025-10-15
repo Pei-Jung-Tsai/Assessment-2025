@@ -11,6 +11,10 @@ import {
   runTransaction,
   serverTimestamp,
 } from 'firebase/firestore'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import InputText from 'primevue/inputtext'
+import { FilterMatchMode } from '@primevue/core/api'
 
 const recipes = ref([]) // list of recipes
 let unsubscribe = null //  onSnapshot cleanup

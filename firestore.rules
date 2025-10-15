@@ -1,0 +1,61 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    //  recipes root collection 
+    match /recipes/{recipeId} {
+
+      // Anyone can read recipes
+      allow read: if true;
+
+      // Only admins can create / arbitrarily update / delete recipes
+      allow create, update, delete: if isAdmin();
+
+      // Regular users: allow updates ONLY when modifying rating aggregate fields
+      // (Multiple allow rules are OR-ed; admin rule above still applies)
+      allow update: if request.auth != null && onlyRatingFieldsChanged();
+
+      //  subcollection: per-user ratings 
+      match /ratings/{userId} {
+        // Anyone can read individual ratings
+        allow read: if true;
+
+        // A user can create/update ONLY their own rating document (1–5 integer)
+        allow create, update: if request.auth != null
+                              && request.auth.uid == userId
+                              && request.resource.data.value is int
+                              && request.resource.data.value >= 1
+                              && request.resource.data.value <= 5;
+      }
+    } 
+
+    //  users root collection 
+    match /users/{userId} {
+      // Each signed-in user can only access their own document
+      allow read, create, update, delete:
+        if request.auth != null && request.auth.uid == userId;
+    }
+
+    //  helper functions 
+    function isAdmin() {
+      // Treat the user as admin if /users/{uid}.role == "admin"
+      return request.auth != null
+             && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+             && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    function onlyRatingFieldsChanged() {
+      // Allow updates that touch ONLY the aggregate rating fields
+      let d = request.resource.data.diff(resource.data);
+
+      return d.addedKeys().size() == 0           // no new fields added
+          && d.removedKeys().size() == 0         // no fields removed
+          && d.changedKeys().hasOnly(['avgRating','ratingSum','ratingCount','updatedAt'])
+          // basic type/constraint checks for the aggregates
+          && request.resource.data.ratingCount is int
+          && request.resource.data.ratingCount >= 0
+          && request.resource.data.ratingSum is number
+          && request.resource.data.avgRating is number;
+    }
+  }
+}
