@@ -6,8 +6,10 @@ import { initAuth } from './stores/auth'
 import PrimeVue from 'primevue/config'
 import Aura from '@primeuix/themes/aura'
 import 'primeicons/primeicons.css'
+import mapboxgl from 'mapbox-gl'
 
 initAuth()
+mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN
 
 const app = createApp(App)
 app.use(router)
