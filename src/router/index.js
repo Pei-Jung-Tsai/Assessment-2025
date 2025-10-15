@@ -6,6 +6,7 @@ import AboutView from '../components/views/AboutView.vue'
 import LoginView from '../components/views/LoginView.vue'
 import RegisterView from '../components/views/RegisterView.vue'
 import AddRecipeView from '../components/views/AddRecipeView.vue'
+import AdminManageView from '../components/views/AdminManageView.vue'
 
 const routes = [
   { path: '/', redirect: '/home' },
@@ -21,6 +22,12 @@ const routes = [
     path: '/addrecipe',
     name: 'AddRecipe',
     component: AddRecipeView,
+    meta: { requiresAdmin: true },
+  },
+  {
+    path: '/adminmanage',
+    name: 'AdminManage',
+    component: AdminManageView,
     meta: { requiresAdmin: true },
   },
 ]

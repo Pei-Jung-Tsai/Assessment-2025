@@ -4,6 +4,8 @@ import { useRouter } from 'vue-router'
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'
 import db from '../../firebase/init.js'
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
+import DatePicker from 'primevue/datepicker'
+import axios from 'axios'
 
 const router = useRouter()
 const auth = getAuth()
@@ -184,13 +186,14 @@ async function submitForm() {
 
             <div class="col-12 col-sm-6">
               <label class="form-label" for="dob">Date of Birth</label>
-              <input
-                id="dob"
-                type="date"
-                class="form-control"
+              <DatePicker
                 v-model="RegisterForm.dob"
+                inputId="dob"
+                showIcon
+                dateFormat="yy-mm-dd"
+                class="w-100"
                 @blur="validateDob(true)"
-                @change="validateDob(false)"
+                @update:modelValue="validateDob(false)"
               />
               <div v-if="errors.dob" class="text-danger small">{{ errors.dob }}</div>
             </div>
@@ -321,5 +324,9 @@ input[type='date']::-webkit-datetime-edit {
 }
 .placeholder {
   color: #ccc;
+}
+input[type='date'] {
+  -webkit-appearance: auto;
+  appearance: auto;
 }
 </style>

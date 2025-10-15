@@ -11,6 +11,6 @@ initAuth()
 
 const app = createApp(App)
 app.use(router)
-app.use(PrimeVue, { theme: { preset: Aura } })
+app.use(PrimeVue, { theme: { preset: Aura, options: { darkModeSelector: 'none' } } })
 
 app.mount('#app')

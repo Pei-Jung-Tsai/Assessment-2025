@@ -20,6 +20,11 @@ import { authState as auth, doSignOut } from '../stores/auth'
               Add Recipe
             </router-link>
           </li>
+          <li class="nav-item" v-if="auth.role === 'admin'">
+            <router-link to="/adminmanage" class="nav-link" active-class="active">
+              Admin Management
+            </router-link>
+          </li>
           <li class="nav-item" v-if="!auth.isAuthed">
             <router-link to="/login" class="nav-link">Log In</router-link>
           </li>

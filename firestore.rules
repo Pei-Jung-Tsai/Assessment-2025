@@ -31,10 +31,11 @@ service cloud.firestore {
 
     //  users root collection 
     match /users/{userId} {
-      // Each signed-in user can only access their own document
-      allow read, create, update, delete:
-        if request.auth != null && request.auth.uid == userId;
-    }
+  
+  allow read: if request.auth != null;
+  
+  allow create, update, delete: if request.auth != null && request.auth.uid == userId;
+}
 
     //  helper functions 
     function isAdmin() {
