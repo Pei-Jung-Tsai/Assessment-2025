@@ -6,6 +6,7 @@ import db from '../../firebase/init.js'
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
 import DatePicker from 'primevue/datepicker'
 import axios from 'axios'
+import { Timestamp } from 'firebase/firestore'
 
 const router = useRouter()
 const auth = getAuth()
@@ -13,7 +14,7 @@ const auth = getAuth()
 //  FORM STATE
 const RegisterForm = ref({
   fullname: '',
-  dob: '',
+  dob: null,
   gender: '',
   email: '',
   password: '',
@@ -46,8 +47,12 @@ const validateFullname = (blur) => {
 }
 
 const validateDob = (blur) => {
-  const ok = !!RegisterForm.value.dob
-  errors.value.dob = !ok && blur ? 'Please select your date of birth.' : null
+  const v = RegisterForm.value.dob
+  const d = v instanceof Date ? v : v ? new Date(v) : null
+  const isValidDate = d && !isNaN(d.getTime())
+  const isPast = isValidDate && d.getTime() < Date.now()
+  const ok = isValidDate && isPast
+  errors.value.dob = !ok && blur ? 'Please select a valid past date.' : null
 }
 
 const validateGender = (blur) => {
@@ -94,7 +99,7 @@ const validateConfirm = (blur) => {
 function clearForm() {
   RegisterForm.value = {
     fullname: '',
-    dob: '',
+    dob: null,
     gender: '',
     email: '',
     password: '',
@@ -140,7 +145,13 @@ async function submitForm() {
           uid,
           email,
           fullName: RegisterForm.value.fullname.trim(),
-          dob: RegisterForm.value.dob || null,
+          dob: RegisterForm.value.dob
+            ? Timestamp.fromDate(
+                RegisterForm.value.dob instanceof Date
+                  ? RegisterForm.value.dob
+                  : new Date(RegisterForm.value.dob),
+              )
+            : null,
           gender: RegisterForm.value.gender || null,
           phone: RegisterForm.value.phone || null,
           role: 'user',

@@ -6,6 +6,7 @@ import corsLib from 'cors'
 import { defineSecret } from 'firebase-functions/params'
 import sgMail from '@sendgrid/mail'
 import { getStorage } from 'firebase-admin/storage'
+import { getFirestore } from 'firebase-admin/firestore'
 
 setGlobalOptions({ region: 'australia-southeast1', timeoutSeconds: 60, memory: '256MiB' })
 const SENDGRID_API_KEY = defineSecret('SENDGRID_API_KEY')
@@ -48,7 +49,7 @@ export const sendWelcomeEmail = onRequest({ secrets: [SENDGRID_API_KEY] }, async
           ' Invalid SENDGRID_API_KEY format:',
           key ? key.slice(0, 5) + '...' : 'undefined',
         )
-        throw new Error('SENDGRID_API_KEY is invalid — should start with SG.')
+        throw new Error('SENDGRID_API_KEY is invalid - should start with SG.')
       }
 
       sgMail.setApiKey(key)
@@ -74,6 +75,28 @@ export const sendWelcomeEmail = onRequest({ secrets: [SENDGRID_API_KEY] }, async
       return res.status(200).json({ ok: true })
     } catch (e) {
       logger.error('sendWelcomeEmail error', e)
+      return res.status(500).json({ error: 'Internal error' })
+    }
+  })
+})
+// get Firestore users total amount HTTPS Function (GET)
+export const getTotalUsers = onRequest(async (req, res) => {
+  return cors(req, res, async () => {
+    try {
+      if (req.method !== 'GET') {
+        return res.status(405).json({ error: 'Method not allowed' })
+      }
+
+      // read Firestore users collection
+      const db = getFirestore()
+      const snap = await db.collection('users').get()
+
+      // use snapshot.size get amount
+      const total = snap.size
+
+      return res.status(200).json({ total })
+    } catch (e) {
+      logger.error('getTotalUsers error', e)
       return res.status(500).json({ error: 'Internal error' })
     }
   })
