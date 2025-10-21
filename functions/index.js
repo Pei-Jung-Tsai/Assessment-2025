@@ -13,6 +13,7 @@ const SENDGRID_API_KEY = defineSecret('SENDGRID_API_KEY')
 const SENDGRID_TEMPLATE_ID = 'd-4332e1e212764dc0a452f17104cbc9eb'
 
 if (!admin.apps.length) admin.initializeApp()
+const db = admin.firestore()
 
 // Allow requests only from your frontend
 const cors = corsLib({ origin: true })
@@ -100,4 +101,41 @@ export const getTotalUsers = onRequest(async (req, res) => {
       return res.status(500).json({ error: 'Internal error' })
     }
   })
+})
+// GET /restaurants - read from Firestore collection "healthyRestaurants"
+export const restaurants = onRequest(async (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*')
+  res.set('Access-Control-Allow-Methods', 'GET, OPTIONS')
+  res.set('Access-Control-Allow-Headers', 'Content-Type')
+
+  if (req.method === 'OPTIONS') return res.status(204).send()
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
+
+  try {
+    const snapshot = await db.collection('healthyRestaurants').orderBy('name').limit(20).get()
+    const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+    res.status(200).json({ count: data.length, items: data })
+  } catch (error) {
+    logger.error('Error fetching restaurants:', error)
+    res.status(500).json({ error: 'Failed to fetch restaurants' })
+  }
+})
+
+// GET /recipes - read from Firestore collection "recipes"
+export const recipes = onRequest(async (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*')
+  res.set('Access-Control-Allow-Methods', 'GET, OPTIONS')
+  res.set('Access-Control-Allow-Headers', 'Content-Type')
+
+  if (req.method === 'OPTIONS') return res.status(204).send()
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
+
+  try {
+    const snapshot = await db.collection('recipes').orderBy('title').limit(20).get()
+    const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+    res.status(200).json({ count: data.length, items: data })
+  } catch (error) {
+    logger.error('Error fetching recipes:', error)
+    res.status(500).json({ error: 'Failed to fetch recipes' })
+  }
 })

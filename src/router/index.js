@@ -7,12 +7,14 @@ import LoginView from '../components/views/LoginView.vue'
 import RegisterView from '../components/views/RegisterView.vue'
 import AddRecipeView from '../components/views/AddRecipeView.vue'
 import AdminManageView from '../components/views/AdminManageView.vue'
+import DocumentationView from '../components/views/DocumentationView.vue'
 
 const routes = [
   { path: '/', redirect: '/home' },
   { path: '/home', name: 'Home', component: HomeView },
 
   { path: '/about', name: 'About', component: AboutView },
+  { path: '/documentationView', name: 'Documentation', component: DocumentationView },
 
   { path: '/login', name: 'Login', component: LoginView, meta: { requiresGuest: true } },
   { path: '/register', name: 'Register', component: RegisterView, meta: { requiresGuest: true } },
