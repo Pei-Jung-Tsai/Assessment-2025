@@ -4,43 +4,48 @@
       <div class="d-flex align-items-center justify-content-between mb-2">
         <h5 class="mb-0">Average Rating by Category</h5>
 
-        <!-- Toggle buttons: switch dataset shown in the single chart -->
-        <div class="btn-group btn-group-sm">
-          <button
-            class="btn"
-            :class="currentView === 'all' ? 'btn-primary' : 'btn-outline-secondary'"
-            @click="switchView('all')"
-          >
-            All
-          </button>
-          <button
-            class="btn"
-            :class="currentView === 'male' ? 'btn-primary' : 'btn-outline-secondary'"
-            @click="switchView('male')"
-          >
-            Male
-          </button>
-          <button
-            class="btn"
-            :class="currentView === 'female' ? 'btn-primary' : 'btn-outline-secondary'"
-            @click="switchView('female')"
-          >
-            Female
-          </button>
+        <!--  UI controls on the right: three view buttons + one export button -->
+        <div class="d-flex align-items-center gap-2">
+          <!--  View toggle: clicking these swaps the dataset shown in the SAME chart -->
+          <div class="btn-group btn-group-sm">
+            <button
+              class="btn"
+              :class="currentView === 'all' ? 'btn-primary' : 'btn-outline-secondary'"
+              @click="switchView('all')"
+            >
+              All
+            </button>
+            <button
+              class="btn"
+              :class="currentView === 'male' ? 'btn-primary' : 'btn-outline-secondary'"
+              @click="switchView('male')"
+            >
+              Male
+            </button>
+            <button
+              class="btn"
+              :class="currentView === 'female' ? 'btn-primary' : 'btn-outline-secondary'"
+              @click="switchView('female')"
+            >
+              Female
+            </button>
+          </div>
+          <!-- [EXPORT] One click: export the CURRENT chart view (All/Male/Female) to a PDF -->
+          <button class="btn btn-sm btn-outline-secondary" @click="exportPdf">Export PDF</button>
         </div>
       </div>
 
-      <!-- Quick legend for how each view is calculated -->
+      <!--  Quick explanation how to compute each view -->
       <p class="text-muted small mb-3">
         All = weighted by recipe rating counts. Male/Female = per-user average within each category.
       </p>
 
-      <!-- Simple loading state while Firestore reads happen -->
+      <!--  Simple loading state while Firestore is fetching -->
       <div v-if="loading" class="text-muted small">Loading chart...</div>
 
-      <!-- One single Chart component; we only replace its data object on toggle -->
+      <!--  Single Chart component; we only replace its `data` when toggling views -->
       <Chart
-        v-else
+        ref="chartRef"
         type="bar"
         :data="chartData"
         :options="chartOptions"
@@ -55,18 +60,20 @@ import { ref, onMounted } from 'vue'
 import Chart from 'primevue/chart'
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore'
 import db from '@/firebase/init.js'
+import { jsPDF } from 'jspdf' // Library to create a PDF
 
-// ----- Reactive state for UI and chart -----
-const loading = ref(true) // true until Firestore queries finish
-const currentView = ref('all') // which dataset to show: 'all' | 'male' | 'female'
+//  Reactive state for UI and chart
+const loading = ref(true) //  true until data has finished loading
+const currentView = ref('all') //  which dataset to show in the chart (all / male / female)
+const chartRef = ref(null) // reference to Chart.js instance (for export)
 
-// Chart.js data model: labels + one dataset (we swap dataset values on toggle)
+// Chart.js data formation { labels, datasets[] }. We will replace this object on toggle.
 const chartData = ref({
   labels: [],
   datasets: [{ label: 'Avg ★ by Category (All)', data: [] }],
 })
 
-// Basic Chart.js options: fixed Y range 0..5, show tooltip/legend
+//  Basic chart options: make it responsive, y-axis 0..5, show legend & tooltip.
 const chartOptions = ref({
   responsive: true,
   maintainAspectRatio: false,
@@ -82,152 +89,222 @@ const chartOptions = ref({
   plugins: { legend: { display: true }, tooltip: { enabled: true } },
 })
 
-// -------------------- Helpers --------------------
-// Normalize a category label for display (empty -> 'Uncategorized')
-function normCategory(s) {
-  return String(s || 'Uncategorized').trim()
-}
-// Create a stable, case-insensitive key for grouping (avoid 'Breakfast' vs 'breakfast')
-function toKey(s) {
-  return normCategory(s).toLowerCase()
+// functions to keep category names clean and groupable
+// If empty, show 'Uncategorized'; also remove extra spaces.
+function normCategory(rawCategory) {
+  return String(rawCategory || 'Uncategorized').trim()
 }
 
-// These three arrays share the same labels order.
-// 'allValues' = weighted by ratingCount using recipe aggregates.
-// 'maleValues' / 'femaleValues' = plain average of individual ratings grouped by gender.
-let labelsRef = [] // final, ordered category labels for the chart
-let allValues = [] // dataset for "All"
-let maleValues = [] // dataset for "Male"
-let femaleValues = [] // dataset for "Female"
+//  Lowercased Category
+function toKey(normalizedCategory) {
+  return normCategory(normalizedCategory).toLowerCase()
+}
 
-// Replace chartData with the chosen dataset, keeping labels fixed
-function setChartFor(view) {
-  let data, label
-  if (view === 'male') {
-    data = maleValues
-    label = 'Avg ★ by Category (Male)'
-  } else if (view === 'female') {
-    data = femaleValues
-    label = 'Avg ★ by Category (Female)'
+//  These arrays feed the chart; all share the same label order:
+//   - allValues   : weighted average using recipe aggregates
+//   - maleValues  : average of individual ratings from male users
+//   - femaleValues: average of individual ratings from female users
+
+let labelsRef = [] //  the fixed x-axis labels (category names)
+let allValues = [] //  "All" dataset
+let maleValues = [] //  "Male" dataset
+let femaleValues = [] // "Female" dataset
+
+//  Swap the dataset shown by the chart without recreating the component
+function setChartFor(viewName) {
+  let datasetValues, datasetLabel
+  if (viewName === 'male') {
+    datasetValues = maleValues
+    datasetLabel = 'Avg ★ by Category (Male)'
+  } else if (viewName === 'female') {
+    datasetValues = femaleValues
+    datasetLabel = 'Avg ★ by Category (Female)'
   } else {
-    data = allValues
-    label = 'Avg ★ by Category (All)'
+    datasetValues = allValues
+    datasetLabel = 'Avg ★ by Category (All)'
   }
 
   chartData.value = {
-    labels: labelsRef,
-    datasets: [{ label, data }],
+    labels: labelsRef, //  x-axis labels stay the same
+    datasets: [{ label: datasetLabel, data: datasetValues }],
   }
 }
 
-// Update current view and refresh the dataset shown
-function switchView(view) {
-  currentView.value = view
-  setChartFor(view)
+//  Button handler: update state and refresh the chart's dataset
+function switchView(nextView) {
+  currentView.value = nextView
+  setChartFor(nextView)
 }
 
-// -------------------- Load & aggregate --------------------
+// [EXPORT] Export the CURRENT chart view as a PDF
+
+async function exportPdf() {
+  try {
+    //  1) Grab the chart's canvas as an image
+    const chartInstance = chartRef.value?.chart
+    if (!chartInstance) {
+      alert('Chart is not ready yet.')
+      return
+    }
+    const canvas = chartInstance.canvas
+    const imgData = canvas.toDataURL('image/png', 1.0)
+
+    //  2) Prepare a PDF page (A4 portrait)
+    const doc = new jsPDF({ unit: 'pt', format: 'a4', compress: true })
+    const pageWidth = doc.internal.pageSize.getWidth()
+    const pageHeight = doc.internal.pageSize.getHeight()
+    const pageMargin = 40
+
+    //  3) Write title, which view it is, and a simple timestamp
+    const title = 'Average Rating by Category'
+    const viewName =
+      currentView.value === 'male' ? 'Male' : currentView.value === 'female' ? 'Female' : 'All'
+    const timestampText = new Date().toLocaleString('en-AU', { hour12: false })
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(16)
+    doc.text(title, pageMargin, pageMargin)
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(11)
+    doc.text(`View: ${viewName}`, pageMargin, pageMargin + 18)
+    doc.text(`Generated: ${timestampText}`, pageMargin, pageMargin + 34)
+
+    //  4) Place the chart image, scaled to fit the page width
+    const imageMaxWidth = pageWidth - pageMargin * 2
+    const imageAspectRatio = canvas.height / canvas.width
+    const imageWidth = imageMaxWidth
+    const imageHeight = imageWidth * imageAspectRatio
+    let cursorY = pageMargin + 50
+    doc.addImage(imgData, 'PNG', pageMargin, cursorY, imageWidth, imageHeight, undefined, 'FAST')
+    cursorY += imageHeight + 18
+
+    //  5) Under the chart, list the numbers: "Category: 3.75"
+    doc.setFont('helvetica', 'bold')
+    doc.text('Data:', pageMargin, cursorY)
+    cursorY += 14
+    doc.setFont('helvetica', 'normal')
+
+    const labels = chartData.value.labels || []
+    const values = chartData.value.datasets?.[0]?.data || []
+    const lines = labels.map((label, index) => `${label}: ${Number(values[index] ?? 0).toFixed(2)}`)
+
+    // If content is long, continue on a new page
+    const lineHeight = 14
+    for (const oneLine of lines) {
+      if (cursorY > pageHeight - pageMargin) {
+        doc.addPage()
+        cursorY = pageMargin
+      }
+      doc.text(oneLine, pageMargin, cursorY)
+      cursorY += lineHeight
+    }
+
+    //  6) Save name
+    const dateStr = new Date().toISOString().slice(0, 10)
+    doc.save(`ratings_report_${dateStr}_${viewName}.pdf`)
+  } catch (error) {
+    console.error('Export PDF failed:', error)
+    alert('Export failed. Please try again.')
+  }
+}
+
+// Load Firestore data once the component is mounted
 onMounted(async () => {
   try {
-    // 1) Read all recipes: compute "All" view using weighted average
-    //    Weighted by ratingCount: sum(avgRating * ratingCount) / sum(ratingCount)
+    // [CHART-All] 1) Read recipes and compute "All" using weighted averages
+    //   weighted avg = Σ(avgRating × ratingCount) / Σ(ratingCount)
     const recipesSnap = await getDocs(collection(db, 'recipes'))
 
-    // Accumulators for "All" (by category key)
+    // Buckets for All view, grouped by category key
     const bucketsAll = new Map() // key -> { label, sumWeighted, sumCount }
-    const recipeRows = [] // keep {id, catKey, catLabel} for later ratings fetch
+    const recipeRows = []
 
-    recipesSnap.forEach((d) => {
-      const r = d.data() || {}
-      const catLabel = normCategory(r.category) // human label (preserve case)
-      const key = toKey(catLabel) // grouping key (lowercased)
-      const avg = Number(r.avgRating || 0)
-      const cnt = Number(r.ratingCount || 0)
+    recipesSnap.forEach((recipeDoc) => {
+      const recipeData = recipeDoc.data() || {}
+      const categoryLabel = normCategory(recipeData.category) // display label
+      const categoryKey = toKey(categoryLabel) // grouping key
+      const averageScore = Number(recipeData.avgRating || 0)
+      const ratingCount = Number(recipeData.ratingCount || 0)
 
-      // Init bucket if this category hasn't been seen
-      if (!bucketsAll.has(key))
-        bucketsAll.set(key, { label: catLabel, sumWeighted: 0, sumCount: 0 })
+      if (!bucketsAll.has(categoryKey)) {
+        bucketsAll.set(categoryKey, { label: categoryLabel, sumWeighted: 0, sumCount: 0 })
+      }
+      const bucket = bucketsAll.get(categoryKey)
+      bucket.sumWeighted += averageScore * ratingCount
+      bucket.sumCount += ratingCount
 
-      // Weighted sum and total count
-      const b = bucketsAll.get(key)
-      b.sumWeighted += avg * cnt
-      b.sumCount += cnt
-
-      // Save for step 2 (reading ratings subcollection per recipe)
-      recipeRows.push({ id: d.id, catKey: key, catLabel })
+      recipeRows.push({ id: recipeDoc.id, catKey: categoryKey, catLabel: categoryLabel })
     })
 
-    // Fix labels order once, based on categories we saw in recipes
+    // Freeze labels order once (x-axis)
     labelsRef = Array.from(bucketsAll.values()).map((b) => b.label)
 
-    // Compute final "All" values aligned with labelsRef
+    // Build "All" values aligned to labelsRef
     allValues = labelsRef.map((label) => {
       const key = toKey(label)
-      const b = bucketsAll.get(key)
-      const v = b && b.sumCount > 0 ? b.sumWeighted / b.sumCount : 0
-      return Number.isFinite(v) ? Number(v.toFixed(2)) : 0
+      const bucket = bucketsAll.get(key)
+      const value = bucket && bucket.sumCount > 0 ? bucket.sumWeighted / bucket.sumCount : 0
+      return Number.isFinite(value) ? Number(value.toFixed(2)) : 0
     })
 
-    // 2) Read ratings per recipe to prepare Male/Female views.
-    //    Also collect all userIds encountered so we can fetch genders once.
+    // [CHART-Gender] 2) Read ratings subcollections to prepare Male/Female
     const allRatings = [] // { userId, value, catKey }
-    const uidSet = new Set()
+    const userIdSet = new Set()
 
     for (const row of recipeRows) {
       const ratingsCol = collection(db, 'recipes', row.id, 'ratings')
       const ratingsSnap = await getDocs(ratingsCol)
 
-      ratingsSnap.forEach((rdoc) => {
-        const data = rdoc.data() || {}
-        const value = Number(data.value || 0)
-        if (!Number.isFinite(value)) return // skip corrupted values
-        allRatings.push({ userId: rdoc.id, value, catKey: row.catKey })
-        uidSet.add(rdoc.id) // track unique rater ids
+      ratingsSnap.forEach((ratingDoc) => {
+        const ratingData = ratingDoc.data() || {}
+        const oneScore = Number(ratingData.value || 0)
+        if (!Number.isFinite(oneScore)) return
+        allRatings.push({ userId: ratingDoc.id, value: oneScore, catKey: row.catKey })
+        userIdSet.add(ratingDoc.id)
       })
     }
 
-    // 3) Fetch gender for each user that appears in ratings
-    //    Simple loop with getDoc for clarity (datasets here are small)
-    const genderByUid = new Map()
-    for (const uid of uidSet) {
-      const us = await getDoc(doc(db, 'users', uid))
-      const g = (us.exists() && (us.data().gender || '')).toString().toLowerCase()
-      genderByUid.set(uid, g) // 'male' | 'female' | '' (unknown)
+    // [CHART-Gender] 3) Fetch each user's gender for those who rated
+    const genderByUserId = new Map()
+    for (const oneUserId of userIdSet) {
+      const userSnap = await getDoc(doc(db, 'users', oneUserId))
+      const gender = (userSnap.exists() && (userSnap.data().gender || '')).toString().toLowerCase()
+      genderByUserId.set(oneUserId, gender) // 'male' | 'female' | ''
     }
 
-    // 4) Aggregate per gender + per category
-    //    We store plain sums and counts, then compute averages.
+    // [CHART-Gender] 4) Sum and count per gender per category, then average
     const maleMap = new Map() // key -> { sum, count }
     const femaleMap = new Map() // key -> { sum, count }
 
-    for (const r of allRatings) {
-      const g = genderByUid.get(r.userId)
-      if (g !== 'male' && g !== 'female') continue // ignore unknown gender
-      const target = g === 'male' ? maleMap : femaleMap
-      if (!target.has(r.catKey)) target.set(r.catKey, { sum: 0, count: 0 })
-      const b = target.get(r.catKey)
-      b.sum += r.value
-      b.count += 1
+    for (const rating of allRatings) {
+      const gender = genderByUserId.get(rating.userId)
+      if (gender !== 'male' && gender !== 'female') continue // skip unknown
+      const targetMap = gender === 'male' ? maleMap : femaleMap
+      if (!targetMap.has(rating.catKey)) targetMap.set(rating.catKey, { sum: 0, count: 0 })
+      const bucket = targetMap.get(rating.catKey)
+      bucket.sum += rating.value
+      bucket.count += 1
     }
 
-    // Build arrays aligned to labelsRef (missing categories become 0)
+    // [CHART-Gender] 5) Build arrays aligned with labelsRef for male/female
     maleValues = labelsRef.map((label) => {
-      const b = maleMap.get(toKey(label))
-      const v = b && b.count > 0 ? b.sum / b.count : 0
-      return Number(v.toFixed(2))
+      const bucket = maleMap.get(toKey(label))
+      const value = bucket && bucket.count > 0 ? bucket.sum / bucket.count : 0
+      return Number(value.toFixed(2))
     })
     femaleValues = labelsRef.map((label) => {
-      const b = femaleMap.get(toKey(label))
-      const v = b && b.count > 0 ? b.sum / b.count : 0
-      return Number(v.toFixed(2))
+      const bucket = femaleMap.get(toKey(label))
+      const value = bucket && bucket.count > 0 ? bucket.sum / bucket.count : 0
+      return Number(value.toFixed(2))
     })
 
-    // 5) Initial render: show "All" by default
+    // [CHART] 6) First render: show All
     setChartFor('all')
   } catch (e) {
-    console.error('[RecipeAnalyze] load failed:', e) // dev-friendly error
+    console.error('[RecipeAnalyze] load failed:', e)
   } finally {
-    loading.value = false // hide loader regardless of success/failure
+    loading.value = false
   }
 })
 </script>
