@@ -6,7 +6,7 @@ import corsLib from 'cors'
 import { defineSecret } from 'firebase-functions/params'
 import sgMail from '@sendgrid/mail'
 import { getStorage } from 'firebase-admin/storage'
-import { getFirestore } from 'firebase-admin/firestore'
+import { getFirestore, Timestamp } from 'firebase-admin/firestore'
 
 setGlobalOptions({ region: 'australia-southeast1', timeoutSeconds: 60, memory: '256MiB' })
 const SENDGRID_API_KEY = defineSecret('SENDGRID_API_KEY')
@@ -80,6 +80,7 @@ export const sendWelcomeEmail = onRequest({ secrets: [SENDGRID_API_KEY] }, async
     }
   })
 })
+
 // get Firestore users total amount HTTPS Function (GET)
 export const getTotalUsers = onRequest(async (req, res) => {
   return cors(req, res, async () => {
@@ -98,6 +99,43 @@ export const getTotalUsers = onRequest(async (req, res) => {
       return res.status(200).json({ total })
     } catch (e) {
       logger.error('getTotalUsers error', e)
+      return res.status(500).json({ error: 'Internal error' })
+    }
+  })
+})
+
+// get { total, under25, gte25 }
+export const getUserAgeCount = onRequest(async (req, res) => {
+  return cors(req, res, async () => {
+    try {
+      // Only allow GET
+      if (req.method !== 'GET') {
+        return res.status(405).json({ error: 'Method not allowed' })
+      }
+
+      const db = getFirestore()
+      const usersCol = db.collection('users')
+
+      // Use 'today - 25 years' as cutoff date (UTC)
+      const now = new Date()
+      const cutoff = new Date(
+        Date.UTC(now.getUTCFullYear() - 25, now.getUTCMonth(), now.getUTCDate()),
+      )
+      const cutoffTs = Timestamp.fromDate(cutoff)
+
+      // Use Firestore aggregation count() to avoid reading all docs
+      const [totalAgg, u25Agg] = await Promise.all([
+        usersCol.count().get(),
+        usersCol.where('dob', '>', cutoffTs).count().get(),
+      ])
+
+      const total = totalAgg.data().count || 0
+      const under25 = u25Agg.data().count || 0
+      const gte25 = Math.max(total - under25, 0)
+
+      return res.status(200).json({ total, under25, gte25 })
+    } catch (e) {
+      logger.error('getUserAgeCount error', e)
       return res.status(500).json({ error: 'Internal error' })
     }
   })
