@@ -1,17 +1,21 @@
 <template>
-  <section class="card">
+  <!--  Accessible region named by heading (landmark-like)  -->
+  <section class="card" aria-labelledby="ratings-heading">
     <div class="card-body">
       <div class="d-flex align-items-center justify-content-between mb-2">
-        <h5 class="mb-0">Average Rating by Category</h5>
+        <!--  Heading also serves as accessible name for the section -->
+        <h5 id="ratings-heading" class="mb-0">Average Rating by Category</h5>
 
         <!--  UI controls on the right: three view buttons + one export button -->
         <div class="d-flex align-items-center gap-2">
           <!--  View toggle: clicking these swaps the dataset shown in the SAME chart -->
-          <div class="btn-group btn-group-sm">
+          <div class="btn-group btn-group-sm" role="group" aria-label="Switch chart view">
             <button
               class="btn"
               :class="currentView === 'all' ? 'btn-primary' : 'btn-outline-secondary'"
               @click="switchView('all')"
+              :aria-pressed="currentView === 'all'"
+              aria-label="Show All users' average"
             >
               All
             </button>
@@ -19,6 +23,8 @@
               class="btn"
               :class="currentView === 'male' ? 'btn-primary' : 'btn-outline-secondary'"
               @click="switchView('male')"
+              :aria-pressed="currentView === 'male'"
+              aria-label="Show Male users' average"
             >
               Male
             </button>
@@ -26,12 +32,21 @@
               class="btn"
               :class="currentView === 'female' ? 'btn-primary' : 'btn-outline-secondary'"
               @click="switchView('female')"
+              :aria-pressed="currentView === 'female'"
+              aria-label="Show Female users' average"
             >
               Female
             </button>
           </div>
-          <!-- [EXPORT] One click: export the CURRENT chart view (All/Male/Female) to a PDF -->
-          <button class="btn btn-sm btn-outline-secondary" @click="exportPdf">Export PDF</button>
+
+          <!--  [EXPORT] One click: export the CURRENT chart view (All/Male/Female) to a PDF -->
+          <button
+            class="btn btn-sm btn-outline-secondary"
+            @click="exportPdf"
+            aria-label="Export current chart as PDF"
+          >
+            Export PDF
+          </button>
         </div>
       </div>
 
@@ -41,16 +56,27 @@
       </p>
 
       <!--  Simple loading state while Firestore is fetching -->
-      <div v-if="loading" class="text-muted small">Loading chart...</div>
+      <div v-if="loading" class="text-muted small" role="status" aria-live="polite">
+        Loading chart...
+      </div>
 
-      <!--  Single Chart component; we only replace its `data` when toggling views -->
-      <Chart
-        ref="chartRef"
-        type="bar"
-        :data="chartData"
-        :options="chartOptions"
-        style="max-height: 460px"
-      />
+      <!--  Single Chart within a <figure>; canvas is hidden from screen readers,
+           description provided via <figcaption> -->
+      <figure v-else aria-describedby="ratings-caption">
+        <Chart
+          ref="chartRef"
+          type="bar"
+          :data="chartData"
+          :options="chartOptions"
+          style="max-height: 460px"
+          aria-hidden="true"
+        />
+        <!--  Text alternative describing the chart content/purpose -->
+        <figcaption id="ratings-caption" class="visually-hidden">
+          Bar chart showing average recipe ratings by category. Use the buttons to switch All, Male,
+          or Female view.
+        </figcaption>
+      </figure>
     </div>
   </section>
 </template>

@@ -1,16 +1,42 @@
 <template>
+  <!-- Map + Side panel layout -->
   <div class="map-layout">
-    <div id="map"></div>
-    <aside class="side-panel">
+    <!-- Map container -->
+    <!--  Landmark + label for the interactive map region. If your map is not keyboard accessible, consider aria-hidden="true". -->
+    <div
+      id="map"
+      role="region"
+      aria-label="Interactive map showing your location and restaurants"
+      aria-describedby="map-instructions"
+      tabindex="0"
+    ></div>
+
+    <!-- Hidden instructions for screen readers -->
+    <!--  Short instructions for SR users. -->
+    <p id="map-instructions" class="visually-hidden">
+      Use the side panel to locate or route to a restaurant. Your current position is point A.
+    </p>
+
+    <!-- Side panel -->
+    <!--  Landmark for the side panel; linked with aria-labelledby. -->
+    <aside class="side-panel" role="region" aria-labelledby="panel-title">
+      <h2 id="panel-title" class="visually-hidden">Restaurants and actions</h2>
+
       <div class="mb-2">
-        <small class="text-muted d-block"
-          >Location A = your current location. Click 'Route' to navigate.</small
-        >
-        <small v-if="statusMessage" class="text-muted d-block">{{ statusMessage }}</small>
+        <small class="text-muted d-block">
+          <!-- Static helper text -->
+          Location A = your current location. Click 'Route' to navigate.
+        </small>
+
+        <!--  Dynamic status message should be read politely by screen readers -->
+        <small v-if="statusMessage" class="text-muted d-block" role="status" aria-live="polite">
+          {{ statusMessage }}
+        </small>
       </div>
 
       <!-- Restaurant list -->
-      <ul class="list-unstyled vstack gap-2 mb-3">
+      <!--  Give the list an accessible label -->
+      <ul class="list-unstyled vstack gap-2 mb-3" aria-label="Healthy restaurants">
         <li v-for="r in restaurantList" :key="r.id" class="border rounded p-2">
           <div class="fw-semibold small">{{ r.name }}</div>
           <div class="text-muted small">
@@ -19,77 +45,136 @@
           </div>
 
           <div class="mt-2 d-flex gap-2">
+            <!--  More specific aria-label with restaurant name. If disabled, describe why via aria-describedby. -->
             <button
               class="btn btn-sm btn-outline-secondary"
               @click="locateRestaurant(r)"
               :disabled="!hasCoordinates(r)"
+              :aria-label="`Locate ${r.name} on map`"
+              :aria-describedby="!hasCoordinates(r) ? `no-coord-${r.id}` : undefined"
             >
               Locate
             </button>
+
             <button
               class="btn btn-sm btn-primary"
               @click="navigateToRestaurant(r)"
               :disabled="!hasCoordinates(r)"
+              :aria-label="`Route to ${r.name} from your location`"
+              :aria-describedby="!hasCoordinates(r) ? `no-coord-${r.id}` : undefined"
             >
               Route
             </button>
           </div>
 
-          <div v-if="!hasCoordinates(r)" class="text-muted small mt-1">
+          <!--  Explain disabled state once and reference it from buttons above -->
+          <div v-if="!hasCoordinates(r)" class="text-muted small mt-1" :id="`no-coord-${r.id}`">
             No coordinates yet - fill latitude &amp; longitude to enable map actions.
           </div>
         </li>
       </ul>
 
       <!-- Admin-only  -->
-      <section v-if="isAdmin" class="admin-form mt-3 pt-3 border-top">
-        <h6 class="mb-2">Add Healthy Restaurant (admin)</h6>
+      <!--  Wrap admin form with region + busy state while saving -->
+      <section
+        v-if="isAdmin"
+        class="admin-form mt-3 pt-3 border-top"
+        role="region"
+        aria-labelledby="admin-form-title"
+        :aria-busy="isSavingRestaurant ? 'true' : 'false'"
+      >
+        <h6 id="admin-form-title" class="mb-2">Add Healthy Restaurant (admin)</h6>
 
-        <form @submit.prevent="addHealthyRestaurant" class="vstack gap-2">
+        <!--  Use label/for + id; add autocomplete where applicable -->
+        <form
+          @submit.prevent="addHealthyRestaurant"
+          class="vstack gap-2"
+          aria-describedby="admin-form-help"
+        >
+          <p id="admin-form-help" class="visually-hidden">
+            Enter restaurant details. Latitude and longitude are optional but required for map
+            actions.
+          </p>
+
           <div>
-            <label class="form-label mb-1 small">Name</label>
-            <input v-model.trim="formName" class="form-control form-control-sm" required />
+            <label class="form-label mb-1 small" for="rest-name">Name</label>
+            <input
+              id="rest-name"
+              v-model.trim="formName"
+              class="form-control form-control-sm"
+              required
+              autocomplete="organization"
+            />
           </div>
 
           <div>
-            <label class="form-label mb-1 small">Phone</label>
-            <input v-model.trim="formPhone" class="form-control form-control-sm" />
+            <label class="form-label mb-1 small" for="rest-phone">Phone</label>
+            <input
+              id="rest-phone"
+              v-model.trim="formPhone"
+              class="form-control form-control-sm"
+              inputmode="tel"
+              autocomplete="tel"
+            />
           </div>
 
           <div>
-            <label class="form-label mb-1 small">Address</label>
-            <input v-model.trim="formAddress" class="form-control form-control-sm" required />
+            <label class="form-label mb-1 small" for="rest-address">Address</label>
+            <input
+              id="rest-address"
+              v-model.trim="formAddress"
+              class="form-control form-control-sm"
+              required
+              autocomplete="street-address"
+            />
           </div>
 
           <div class="row g-2">
             <div class="col-6">
-              <label class="form-label mb-1 small">Latitude</label>
+              <label class="form-label mb-1 small" for="rest-lat">Latitude</label>
               <input
+                id="rest-lat"
                 v-model.number="formLatitude"
                 type="number"
                 step="0.000001"
                 class="form-control form-control-sm"
+                inputmode="decimal"
+                aria-describedby="lat-help"
               />
             </div>
             <div class="col-6">
-              <label class="form-label mb-1 small">Longitude</label>
+              <label class="form-label mb-1 small" for="rest-lng">Longitude</label>
               <input
+                id="rest-lng"
                 v-model.number="formLongitude"
                 type="number"
                 step="0.000001"
                 class="form-control form-control-sm"
+                inputmode="decimal"
+                aria-describedby="lng-help"
               />
             </div>
+            <!--  Optional hints for numeric precision -->
+            <p id="lat-help" class="visually-hidden">
+              Latitude in decimal degrees, 6 decimal places.
+            </p>
+            <p id="lng-help" class="visually-hidden">
+              Longitude in decimal degrees, 6 decimal places.
+            </p>
           </div>
 
           <button
             class="btn btn-sm btn-outline-secondary align-self-start"
             :disabled="isSavingRestaurant"
+            :aria-label="isSavingRestaurant ? 'Saving restaurant' : 'Save restaurant'"
           >
             {{ isSavingRestaurant ? 'Saving...' : 'Save restaurant' }}
           </button>
 
-          <p v-if="formMessage" class="text-muted small mb-0">{{ formMessage }}</p>
+          <!--  Announce save result/status politely -->
+          <p v-if="formMessage" class="text-muted small mb-0" role="status" aria-live="polite">
+            {{ formMessage }}
+          </p>
         </form>
       </section>
     </aside>

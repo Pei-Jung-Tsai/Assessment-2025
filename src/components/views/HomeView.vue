@@ -87,41 +87,64 @@ function fmtAvg(v) {
 </script>
 
 <template>
-  <div class="container py-4">
-    <h2 class="mb-4">Recipes</h2>
+  <!--  Page section named by the H2 (helps screen readers jump here) -->
+  <section class="container py-4" aria-labelledby="recipes-heading">
+    <!--  Heading is referenced by aria-labelledby above -->
+    <h2 id="recipes-heading" class="mb-4">Recipes</h2>
 
-    <div v-if="recipes.length === 0" class="text-muted">No recipes yet.</div>
+    <!--  Status message (announced when it appears) -->
+    <div v-if="recipes.length === 0" class="text-muted" role="status" aria-live="polite">
+      No recipes yet.
+    </div>
 
-    <div class="row g-4">
-      <div v-for="r in recipes" :key="r.id" class="col-12 col-md-6 col-lg-4">
+    <!-- Treat the grid as a list for assistive tech -->
+    <div class="row g-4" role="list" aria-label="Recipe list">
+      <div
+        v-for="r in recipes"
+        :key="r.id"
+        class="col-12 col-md-6 col-lg-4"
+        role="listitem"
+        aria-label="Recipe card"
+      >
         <div class="card h-100 shadow-sm">
+          <!--  Meaningful alt text that includes the recipe title -->
           <img
             v-if="r.image"
             :src="r.image"
             class="card-img-top object-fit-cover"
-            alt="Recipe image"
+            :alt="`Image of recipe: ${r.title}`"
             style="height: 180px"
           />
+
           <div class="card-body d-flex flex-column">
+            <!--  Card title read as the name of this item -->
             <h5 class="card-title mb-1">{{ r.title }}</h5>
+
+            <!--  Secondary info (category/time) - left as plain text; OK for SR -->
             <p class="text-secondary small mb-2">
               <span v-if="r.category">#{{ r.category }}</span>
               <span v-if="r.time">&nbsp;•&nbsp;{{ r.time }} mins</span>
             </p>
 
+            <!--  Average and count - read naturally as text -->
             <p class="mb-2">
               <strong>{{ fmtAvg(r.avgRating) }}★</strong>
               <span class="text-muted"> ({{ r.ratingCount || 0 }} ratings)</span>
             </p>
 
-            <!-- Simple star rating (1-5) -->
-            <div class="d-flex gap-2 mt-auto">
+            <!--  Rating control: group + clear labels + keyboard ready -->
+            <div
+              class="d-flex gap-2 mt-auto"
+              role="group"
+              :aria-label="`Rate ${r.title} from 1 to 5 stars`"
+            >
               <button
                 v-for="n in 5"
                 :key="n"
                 type="button"
                 class="btn btn-outline-primary btn-sm"
                 @click="rateRecipe(r.id, n)"
+                :aria-label="`${n} star${n > 1 ? 's' : ''} for ${r.title}`"
               >
                 {{ n }}★
               </button>
@@ -130,7 +153,7 @@ function fmtAvg(v) {
         </div>
       </div>
     </div>
-  </div>
+  </section>
 </template>
 
 <style scoped>

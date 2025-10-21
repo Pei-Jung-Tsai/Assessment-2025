@@ -194,9 +194,9 @@ async function submitForm() {
   <div class="container py-4">
     <div class="row justify-content-center">
       <div class="col-12 col-lg-8">
-        <h2 class="text-center mb-4">Register</h2>
+        <h2 id="register-title" class="text-center mb-4">Register</h2>
 
-        <form @submit.prevent="submitForm" novalidate>
+        <form @submit.prevent="submitForm" novalidate aria-labelledby="register-title">
           <!-- Row 1 -->
           <div class="row g-3 mb-3">
             <div class="col-12 col-sm-6">
@@ -204,12 +204,23 @@ async function submitForm() {
               <input
                 id="fullname"
                 class="form-control"
+                type="text"
+                name="fullName"
                 v-model="RegisterForm.fullname"
                 placeholder="e.g. Pei-Jung Tsai"
+                autocomplete="name"
+                required
+                :aria-invalid="!!errors.fullname"
+                aria-describedby="fullname-error"
                 @blur="validateFullname(true)"
                 @input="validateFullname(false)"
               />
-              <div v-if="errors.fullname" class="text-danger small">
+              <div
+                v-if="errors.fullname"
+                id="fullname-error"
+                class="text-danger small"
+                role="alert"
+              >
                 {{ errors.fullname }}
               </div>
             </div>
@@ -219,13 +230,20 @@ async function submitForm() {
               <DatePicker
                 v-model="RegisterForm.dob"
                 inputId="dob"
+                name="birthdate"
                 showIcon
                 dateFormat="yy-mm-dd"
                 class="w-100"
+                autocomplete="bday"
+                required
+                :aria-invalid="!!errors.dob"
+                aria-describedby="dob-error"
                 @blur="validateDob(true)"
                 @update:modelValue="validateDob(false)"
               />
-              <div v-if="errors.dob" class="text-danger small">{{ errors.dob }}</div>
+              <div v-if="errors.dob" id="dob-error" class="text-danger small" aria-live="polite">
+                {{ errors.dob }}
+              </div>
             </div>
           </div>
 
@@ -236,7 +254,12 @@ async function submitForm() {
               <select
                 id="gender"
                 class="form-select"
+                name="gender"
                 v-model="RegisterForm.gender"
+                autocomplete="sex"
+                required
+                :aria-invalid="!!errors.gender"
+                aria-describedby="gender-error"
                 @blur="validateGender(true)"
                 @change="validateGender(false)"
               >
@@ -245,7 +268,14 @@ async function submitForm() {
                 <option value="male">Male</option>
                 <option value="other">Other</option>
               </select>
-              <div v-if="errors.gender" class="text-danger small">{{ errors.gender }}</div>
+              <div
+                v-if="errors.gender"
+                id="gender-error"
+                class="text-danger small"
+                aria-live="polite"
+              >
+                {{ errors.gender }}
+              </div>
             </div>
 
             <div class="col-12 col-sm-6">
@@ -254,12 +284,25 @@ async function submitForm() {
                 id="phone"
                 type="tel"
                 class="form-control"
+                name="phone"
                 v-model="RegisterForm.phone"
+                placeholder="e.g. 0487654321"
+                inputmode="tel"
+                autocomplete="tel-national"
+                required
+                :aria-invalid="!!errors.phone"
+                aria-describedby="phone-error"
                 @blur="validatePhone(true)"
                 @input="validatePhone(false)"
-                placeholder="e.g. 0487654321"
               />
-              <div v-if="errors.phone" class="text-danger small">{{ errors.phone }}</div>
+              <div
+                v-if="errors.phone"
+                id="phone-error"
+                class="text-danger small"
+                aria-live="polite"
+              >
+                {{ errors.phone }}
+              </div>
             </div>
           </div>
 
@@ -271,12 +314,19 @@ async function submitForm() {
                 id="email"
                 type="email"
                 class="form-control"
+                name="email"
                 v-model="RegisterForm.email"
                 placeholder="e.g.xxx@gmail.com"
+                autocomplete="email"
+                required
+                :aria-invalid="!!errors.email"
+                aria-describedby="email-error"
                 @blur="validateEmail(true)"
                 @input="validateEmail(false)"
               />
-              <div v-if="errors.email" class="text-danger small">{{ errors.email }}</div>
+              <div v-if="errors.email" id="email-error" class="text-danger small" role="alert">
+                {{ errors.email }}
+              </div>
             </div>
           </div>
 
@@ -288,12 +338,17 @@ async function submitForm() {
                 id="password"
                 type="password"
                 class="form-control"
+                name="new-password"
                 v-model="RegisterForm.password"
+                autocomplete="new-password"
+                required
+                :aria-invalid="!!errors.password"
+                aria-describedby="password-hints password-error"
                 @blur="validatePassword(true)"
                 @input="validatePassword(false)"
               />
-              <div v-if="RegisterForm.password" class="small mt-1">
-                <ul class="list-unstyled">
+              <div v-if="RegisterForm.password" class="small mt-1" id="password-hints">
+                <ul class="list-unstyled" aria-live="polite">
                   <li :class="passwordHints.length ? 'text-success' : 'text-danger'">
                     At least 8 characters
                   </li>
@@ -311,7 +366,14 @@ async function submitForm() {
                   </li>
                 </ul>
               </div>
-              <div v-if="errors.password" class="text-danger small">{{ errors.password }}</div>
+              <div
+                v-if="errors.password"
+                id="password-error"
+                class="text-danger small"
+                role="alert"
+              >
+                {{ errors.password }}
+              </div>
             </div>
 
             <div class="col-12 col-sm-6">
@@ -320,11 +382,21 @@ async function submitForm() {
                 id="confirmPassword"
                 type="password"
                 class="form-control"
+                name="confirm-new-password"
                 v-model="RegisterForm.confirmPassword"
+                autocomplete="new-password"
+                required
+                :aria-invalid="!!errors.confirmPassword"
+                aria-describedby="confirm-error"
                 @blur="validateConfirm(true)"
                 @input="validateConfirm(false)"
               />
-              <div v-if="errors.confirmPassword" class="text-danger small">
+              <div
+                v-if="errors.confirmPassword"
+                id="confirm-error"
+                class="text-danger small"
+                role="alert"
+              >
                 {{ errors.confirmPassword }}
               </div>
             </div>
@@ -335,7 +407,15 @@ async function submitForm() {
             <button class="btn btn-outline-secondary" type="button" @click="clearForm">
               Clear
             </button>
-            <p v-if="globalError" class="text-danger text-center mt-2">{{ globalError }}</p>
+
+            <p
+              v-if="globalError"
+              class="text-danger text-center mt-2"
+              role="alert"
+              aria-live="assertive"
+            >
+              {{ globalError }}
+            </p>
           </div>
         </form>
       </div>
@@ -344,6 +424,10 @@ async function submitForm() {
 </template>
 
 <style scoped>
+:focus {
+  outline: 2px solid #0d6efd;
+  outline-offset: 2px;
+}
 .form-control::placeholder {
   color: #ccc;
   opacity: 1;

@@ -1,29 +1,43 @@
 <template>
   <div class="container py-4">
     <!-- Users Section -->
-    <section class="mb-4">
-      <h2 class="mb-3">Users</h2>
+    <section class="mb-4" role="region" aria-labelledby="users-heading">
+      <h2 id="users-heading" class="mb-3">Users</h2>
 
-      <div class="card mb-3">
+      <div class="card mb-3" aria-describedby="users-kpi-desc">
         <div class="card-body">
+          <p id="users-kpi-desc" class="visually-hidden">
+            Summary cards showing total users and counts by age group. Numbers update dynamically.
+          </p>
           <div class="d-flex align-items-center gap-3 flex-wrap">
-            <div class="px-3 py-2 rounded-3 border bg-light">
+            <div class="px-3 py-2 rounded-3 border bg-light" role="group" aria-label="Total users">
               <div class="text-muted small">Total users</div>
-              <div class="fs-4 fw-bold">{{ totalUsers }}</div>
-            </div>
-            <div class="px-3 py-2 rounded-3 border bg-light">
-              <div class="text-muted small">Under 25</div>
-              <div class="fs-4 fw-bold">{{ under25 }}</div>
+
+              <div class="fs-4 fw-bold" role="status" aria-live="polite">{{ totalUsers }}</div>
             </div>
 
-            <div class="px-3 py-2 rounded-3 border bg-light">
+            <div
+              class="px-3 py-2 rounded-3 border bg-light"
+              role="group"
+              aria-label="Users under 25"
+            >
+              <div class="text-muted small">Under 25</div>
+              <div class="fs-4 fw-bold" role="status" aria-live="polite">{{ under25 }}</div>
+            </div>
+
+            <div
+              class="px-3 py-2 rounded-3 border bg-light"
+              role="group"
+              aria-label="Users 25 and above"
+            >
               <div class="text-muted small">25+ years</div>
-              <div class="fs-4 fw-bold">{{ gte25 }}</div>
+              <div class="fs-4 fw-bold" role="status" aria-live="polite">{{ gte25 }}</div>
             </div>
           </div>
         </div>
       </div>
 
+      <!-- Data table -->
       <DataTable
         :value="users"
         v-model:filters="filters"
@@ -35,28 +49,52 @@
         stripedRows
         responsiveLayout="scroll"
         class="mb-4"
+        aria-label="Users table"
       >
+        <template #header>
+          <div class="visually-hidden" id="users-table-desc">
+            Interactive users table with sorting and filters for name, email, phone, gender and date
+            of birth.
+          </div>
+        </template>
+
         <Column field="fullName" header="Full name" sortable>
           <template #filter>
-            <InputText v-model="filters.fullName.value" placeholder="Search name" />
+            <InputText
+              v-model="filters.fullName.value"
+              placeholder="Search name"
+              aria-label="Filter by full name"
+            />
           </template>
         </Column>
 
         <Column field="email" header="Email" sortable>
           <template #filter>
-            <InputText v-model="filters.email.value" placeholder="Search email" />
+            <InputText
+              v-model="filters.email.value"
+              placeholder="Search email"
+              aria-label="Filter by email"
+            />
           </template>
         </Column>
 
         <Column field="phone" header="Phone" sortable>
           <template #filter>
-            <InputText v-model="filters.phone.value" placeholder="Search phone" />
+            <InputText
+              v-model="filters.phone.value"
+              placeholder="Search phone"
+              aria-label="Filter by phone"
+            />
           </template>
         </Column>
 
         <Column field="gender" header="Gender" sortable>
           <template #filter>
-            <InputText v-model="filters.gender.value" placeholder="Search gender" />
+            <InputText
+              v-model="filters.gender.value"
+              placeholder="Search gender"
+              aria-label="Filter by gender"
+            />
           </template>
         </Column>
 
@@ -65,7 +103,11 @@
             {{ data.dobText }}
           </template>
           <template #filter>
-            <InputText v-model="filters.dobText.value" placeholder="Search dob (YYYY-MM-DD)" />
+            <InputText
+              v-model="filters.dobText.value"
+              placeholder="Search dob (YYYY-MM-DD)"
+              aria-label="Filter by date of birth"
+            />
           </template>
         </Column>
       </DataTable>
@@ -74,9 +116,9 @@
     <hr class="my-4" />
 
     <!-- Recipes / Analytics Section  -->
-    <section class="mb-5">
+    <section class="mb-5" role="region" aria-labelledby="recipes-analytics-heading">
       <div class="d-flex align-items-center justify-content-between mb-2">
-        <h2 class="mb-0">Recipes Analytics</h2>
+        <h2 id="recipes-analytics-heading" class="mb-0">Recipes Analytics</h2>
       </div>
 
       <RecipeAnalyze />
