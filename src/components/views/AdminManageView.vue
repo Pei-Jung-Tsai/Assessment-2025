@@ -46,11 +46,17 @@
         filterDisplay="menu"
         removableSort
         showGridlines
+        v-model:selection="selectedUsers"
+        dataKey="id"
+        selectionMode="multiple"
         stripedRows
         responsiveLayout="scroll"
         class="mb-4"
         aria-label="Users table"
       >
+        <!-- English: Checkbox column (allows selecting users or select all)-->
+        <Column selectionMode="multiple" headerStyle="width:3em"></Column>
+
         <template #header>
           <div class="visually-hidden" id="users-table-desc">
             Interactive users table with sorting and filters for name, email, phone, gender and date
@@ -111,6 +117,10 @@
           </template>
         </Column>
       </DataTable>
+      <div class="text-end mt-3">
+        <!--  Bulk email button -->
+        <button class="btn btn-primary btn-sm" @click="sendBulkEmail">Send Bulk Email</button>
+      </div>
     </section>
 
     <hr class="my-4" />
@@ -135,6 +145,7 @@ import InputText from 'primevue/inputtext'
 import { FilterMatchMode } from '@primevue/core/api'
 import db from '@/firebase/init'
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore'
+import { getAuth } from 'firebase/auth'
 
 const users = ref([])
 const totalUsers = ref(0)
@@ -213,28 +224,50 @@ async function fetchAgeBuckets() {
     console.error('fetchAgeBuckets error:', err)
   }
 }
-</script>
 
-<style scoped>
-.container {
-  max-width: 900px;
+//  Bulk Email
+//  Selected users for bulk email
+const selectedUsers = ref([])
+
+//  Send email to selected users
+async function sendBulkEmail() {
+  try {
+    const auth = getAuth()
+    const currentUser = auth.currentUser
+    if (!currentUser) {
+      alert('Please sign in first.')
+      return
+    }
+
+    const idToken = await currentUser.getIdToken()
+
+    //get selected user id
+    const userIds = selectedUsers.value.map((u) => u.id)
+    if (userIds.length === 0) {
+      alert('Please select at least one user.')
+      return
+    }
+
+    const functionUrl = import.meta.env.VITE_SEND_BULK_EMAIL_URL
+
+    const resp = await fetch(functionUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: JSON.stringify({ userIds }),
+    })
+
+    const result = await resp.json()
+    if (resp.ok) {
+      alert(`Sent ${result.count} emails successfully!${result.count} `)
+    } else {
+      alert(` Failed: ${result.error}`)
+    }
+  } catch (err) {
+    console.error('sendBulkEmail error:', err)
+    alert('Something went wrong.')
+  }
 }
-.stats {
-  margin-bottom: 1rem;
-}
-.stat-chip {
-  display: inline-block;
-  background: #f3f4f6;
-  padding: 8px 14px;
-  border-radius: 8px;
-  font-weight: 600;
-}
-.label {
-  font-size: 12px;
-  color: #6b7280;
-}
-.value {
-  font-size: 18px;
-  color: #111827;
-}
-</style>
+</script>

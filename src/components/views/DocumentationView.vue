@@ -5,7 +5,6 @@
       Public REST endpoints for third-party access. Responses are JSON. No auth required.
     </p>
 
-    <!-- Overview -->
     <div class="mb-4">
       <h5 class="mb-2">Overview</h5>
       <ul class="small text-muted mb-0">
@@ -140,8 +139,6 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-
-const restaurantsUrl = computed(() => 'https://restaurants-dnedbvyhva-ts.a.run.app')
-const recipesUrl = computed(() => 'https://recipes-dnedbvyhva-ts.a.run.app')
+const restaurantsUrl = 'https://restaurants-dnedbvyhva-ts.a.run.app'
+const recipesUrl = 'https://recipes-dnedbvyhva-ts.a.run.app'
 </script>

@@ -81,6 +81,84 @@ export const sendWelcomeEmail = onRequest({ secrets: [SENDGRID_API_KEY] }, async
   })
 })
 
+//  Bulk Email Function
+//  Send bulk emails to selected users
+export const sendBulkEmail = onRequest({ secrets: [SENDGRID_API_KEY] }, async (req, res) => {
+  return cors(req, res, async () => {
+    try {
+      //  Only allow POST method
+      if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' })
+      }
+
+      // [1] Verify Firebase Login
+      // Verify Firebase ID token (to ensure user is signed in)
+      const authHeader = req.headers.authorization || ''
+      const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
+      if (!idToken) {
+        return res.status(401).json({ error: 'Missing Authorization header' })
+      }
+
+      const decoded = await admin.auth().verifyIdToken(idToken)
+      logger.info('Auth OK', { uid: decoded.uid })
+
+      // [2] Read recipient list
+      // Frontend will send userIds (array of selected users)
+      const { userIds } = req.body || {}
+      if (!Array.isArray(userIds) || userIds.length === 0) {
+        return res.status(400).json({ error: "Missing or invalid 'userIds' array" })
+      }
+      logger.info('Received userIds:', userIds)
+
+      // [3] Load recipients data
+      // Get emails and display names from Firestore 'users' collection
+      const snapshots = await Promise.all(
+        userIds.map((uid) => db.collection('users').doc(uid).get()),
+      )
+      const recipients = snapshots
+        .map((snap) => {
+          const data = snap.data() || {}
+          return { to: data.email, displayName: data.fullName }
+        })
+        .filter((r) => r.to) // ensure valid email
+      if (recipients.length === 0) {
+        return res.status(400).json({ error: 'No valid recipients found' })
+      }
+
+      // [4] Setup SendGrid
+      //  Load and check SendGrid key
+      const key = SENDGRID_API_KEY.value()
+      if (!key || !key.startsWith('SG.')) {
+        logger.error('Invalid SENDGRID_API_KEY format')
+        throw new Error('SENDGRID_API_KEY invalid')
+      }
+      sgMail.setApiKey(key)
+
+      // [5] Send emails
+      //  Send to all recipients using same template
+      const SENDGRID_FROM = { email: 'evelyntsai0917@gmail.com', name: 'Myhealth Team' }
+
+      const emails = recipients.map((r) => ({
+        to: r.to,
+        from: SENDGRID_FROM,
+        templateId: SENDGRID_TEMPLATE_ID,
+        dynamicTemplateData: { displayName: r.displayName },
+      }))
+
+      //  Use Promise.all to send all emails concurrently
+      await Promise.all(emails.map((msg) => sgMail.send(msg)))
+
+      // [6] Done
+      //  Return success
+      logger.info(`Bulk email sent to ${recipients.length} users`)
+      return res.status(200).json({ ok: true, count: recipients.length })
+    } catch (e) {
+      logger.error('sendBulkEmail error:', e)
+      return res.status(500).json({ error: 'Internal server error' })
+    }
+  })
+})
+
 // get Firestore users total amount HTTPS Function (GET)
 export const getTotalUsers = onRequest(async (req, res) => {
   return cors(req, res, async () => {

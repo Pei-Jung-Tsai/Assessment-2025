@@ -163,7 +163,6 @@ function switchView(nextView) {
 }
 
 // [EXPORT] Export the CURRENT chart view as a PDF
-
 async function exportPdf() {
   try {
     //  1) Grab the chart's canvas as an image
