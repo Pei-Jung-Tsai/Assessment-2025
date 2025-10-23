@@ -54,7 +54,7 @@
         class="mb-4"
         aria-label="Users table"
       >
-        <!-- English: Checkbox column (allows selecting users or select all)-->
+        <!-- Checkbox column (allows selecting users or select all)-->
         <Column selectionMode="multiple" headerStyle="width:3em"></Column>
 
         <template #header>
